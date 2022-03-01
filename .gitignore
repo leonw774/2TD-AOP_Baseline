@@ -1,4 +1,7 @@
+__pycache__
+.idea
 *.pdf
 *.iml
-.idea
+data/*.txt
 out
+GreedLS/classes/greedLS

@@ -4,16 +4,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.PriorityQueue;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.Vector;
+import java.util.*;
 import java.net.URL;
 import java.net.HttpURLConnection;
 import java.io.BufferedReader;
@@ -22,7 +13,6 @@ import java.io.DataOutputStream;
 import java.io.FileWriter;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
-import java.util.Comparator;
 //import javax.net.ssl.HttpsURLConnection;
 
 
@@ -36,8 +26,10 @@ import java.util.Comparator;
 
 
 public class GreedLS {
-    private final static String adjFile = "Graph/sampled-LAStaticData-Arcs.txt";
-    private final static String nodeFile = "Graph/LAStaticData-Nodes.csv";
+//    private final static String adjFile = "Graph/sampled-LAStaticData-Arcs.txt";
+//    private final static String nodeFile = "Graph/LAStaticData-Nodes.csv";
+    private final static String adjFile = "Graph/Arcs.txt"; /* MODIFIED */
+    private final static String nodeFile = "Graph/Nodes.csv"; /* MODIFIED */
     private static PrintWriter outputWriter;
 
     public final static Graph graph = new Graph(adjFile, nodeFile);
@@ -503,8 +495,8 @@ public class GreedLS {
         int new_cost = (int) ((vi_vm_dist + vn_vj_dist) * GreedLS.speedAVG) +
                 GreedLS.graph.adjList.adjacencyList.get(vm.getId()).get(vn.getId()).getLeft();
         int deltaCost = new_cost - gap.SPCost;
-        double criteria = ((double) deltaValue / GreedLS.valueMAX) / ((double) deltaCost / GreedLS.costMAX + Double.MIN_VALUE); /* MODIFIED: ADD Double.MIN_VALUE because we want source == target */
-        //double criteria = ((double)new_value/GreedLS.valueMAX) / ((double)new_cost/GreedLS.costMAX);
+//        double criteria = ((double)new_value/GreedLS.valueMAX) / ((double)new_cost/GreedLS.costMAX);
+        double criteria = (deltaCost != 0) ? ((double) new_value / GreedLS.valueMAX) / ((double) new_cost / GreedLS.costMAX) : Double.MAX_VALUE; /* MODIFIED: ADD Double.MIN_VALUE because we want source == target */
         return criteria;
     }
 
@@ -513,19 +505,16 @@ public class GreedLS {
      * Print the solution path.
      */
     public void printSolution() {
-        GreedLS.outputWriter.println("solution: total value: " +
+        double valuePercent = (double) this.solution.totalValue;
+        GreedLS.outputWriter.print("solution: total value: " +
                 this.solution.totalValue +
-                "\ttotal cost: " +
+                "%\ttotal cost: " +
                 this.solution.totalCost);
-        /* BELOW MODIFIED: rewrite output to show solution as path */
-        LinkedList<Integer> pathList = new LinkedList<Integer>();
-        for (Gap gap : this.solution.gapList) { //---print the path of the solution
-//			GreedLS.outputWriter.print(", " + gap.start + " --- " + gap.end);
-            pathList.addAll(gap.vexIDList);
-            GreedLS.outputWriter.print(gap.vexIDList + " " + gap.actualStarttime + ",");
-        }
-        GreedLS.outputWriter.println("\n" + pathList);
-        /* ABOVE MODIFIED */
+		  /* for(Gap gap : this.solution.gapList){ //---print the path of the solution
+			  System.out.print(", " + gap.start + " --- " + gap.end);
+		  } */
+        //System.out.println();
+        GreedLS.outputWriter.println();
     }
 
 
@@ -717,6 +706,7 @@ public class GreedLS {
 
         this.tempCAS.clear();
         this.tempVerticeEALD_map.clear();
+
         for (Gap gap : this.solution.gapList) {
             //======candidate calculation
             programCurTime = System.currentTimeMillis();
@@ -784,6 +774,25 @@ public class GreedLS {
             Gap best_vn_vj = findTDSP.tdsp(arc_gap_pair.getRight().getLeft().target,
                     closestGap.end, GreedLS.TimeCost2Idx(starttime_vn_vj_int));
 
+            /* BELOW MODIFIED: to disallow same vertex to be walked through more than once */
+            HashSet<Integer> remainedVertices = new HashSet<Integer>();
+            for (Gap gap : this.solution.gapList) {
+                if (gap != closestGap) {
+                    remainedVertices.addAll(gap.vexIDList);
+                }
+            }
+            HashSet<Integer> ViVmSet = new HashSet<Integer>(best_vi_vm.vexIDList);
+            HashSet<Integer> VnVjSet = new HashSet<Integer>(best_vn_vj.vexIDList);
+            HashSet<Integer> s = new HashSet<Integer>(ViVmSet);
+            s.retainAll(VnVjSet);
+            ViVmSet.retainAll(remainedVertices);
+            VnVjSet.retainAll(remainedVertices);
+            if (ViVmSet.size() > 0 || VnVjSet.size() > 0 || s.size() > 0) {
+                this.tempCAS.remove(arc_gap_pair.getRight().getLeft());
+                continue;
+            }
+            /* ABOVE MODIFIED */
+
             Pair<Integer, Integer> cost_value_list_vm_vn =
                     GreedLS.graph.adjList.adjacencyList.get(
                             arc_gap_pair.getRight().getLeft().source).get(
@@ -824,7 +833,7 @@ public class GreedLS {
         this.verticeEALD_map.clear();
         this.verticeEALD_map.putAll(this.tempVerticeEALD_map); //--recalcuate
 
-//        this.ArrageSolution(); /* MODIFIED: uncomment this */
+//        this.ArrageSolution();
     }
 
 
@@ -843,7 +852,6 @@ public class GreedLS {
 
         List<String> querylines = Files.readAllLines(Paths.get(queryFilestr),
                 StandardCharsets.UTF_8);
-
         for (String stpair : querylines) {
             String[] parts = stpair.split(",");
             QuerySetting.SourceVexID = Integer.parseInt(parts[0]);
@@ -927,7 +935,7 @@ public class GreedLS {
                 iterationNUM++;
 
                 if (runningTime > QuerySetting.runingTimeThreshold * 1000) {
-                    GreedLS.outputWriter.print("Time out.. Terminate search algorithm");
+                    GreedLS.outputWriter.print("Time out.. Terminate search algorithm\n");
                     break; //terminate in 1 second
                 }
 
@@ -951,6 +959,13 @@ public class GreedLS {
                 this.printSolution();
                 GreedLS.outputWriter.flush();
             }//end while true/iteration
+            /* BELOW MODIFIED: print output to file */
+            LinkedList<Integer> pathList = new LinkedList<Integer>();
+            for (Gap gap : this.solution.gapList) {
+                pathList.addAll(gap.vexIDList);
+            }
+            GreedLS.outputWriter.println(pathList);
+            /* ABOVE MODIFIED */
         }//end for each queryline
         GreedLS.outputWriter.close();
     }

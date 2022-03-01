@@ -107,7 +107,7 @@ public class AdjList {
 			System.err.println(re.toString());
 			System.exit(1);
 		}
-		System.out.println("Finished Loading...");
+		System.out.println("Finished Loading... " + adjacencyList.size() + " vertices in graph.");
 	}
 	
 	

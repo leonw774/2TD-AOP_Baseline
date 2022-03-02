@@ -52,8 +52,8 @@ public class GreedLS {
      */
     public static double speedMAX = 662.7946059169074;
 
-    public static double speedMIN = 15.615478233558985; //Double.MAX_VALUE;
-//    public static double speedMIN = 0.0; //Double.MAX_VALUE; /* MODIFIED: we don't use distance pruning */
+//    public static double speedMIN = 15.615478233558985; //Double.MAX_VALUE;
+    public static double speedMIN = 0.0; //Double.MAX_VALUE; /* MODIFIED: we don't use distance pruning */
     public static double speedAVG = 327.81159775135086;
     private static int curMaxScenicValue = 0 - Integer.MAX_VALUE;
     private static int[] optimalValue = new int[4];
@@ -322,12 +322,12 @@ public class GreedLS {
                         /** Not apply EALD-pruning yet. */
                         if (eaj < t0 + b) {//----within the budget
                             /* BELOW MODIFIED: we don't use distance pruning */
-                            double vj_target_dist = this.EarthDistance(
-                                    GreedLS.graph.vertices.get(QuerySetting.TargetVexID).lat,
-                                    GreedLS.graph.vertices.get(QuerySetting.TargetVexID).lng,
-                                    GreedLS.graph.vertices.get(vjpair.getKey()).lat,
-                                    GreedLS.graph.vertices.get(vjpair.getKey()).lng);
-//                            double vj_target_dist = 0;
+//                            double vj_target_dist = this.EarthDistance(
+//                                    GreedLS.graph.vertices.get(QuerySetting.TargetVexID).lat,
+//                                    GreedLS.graph.vertices.get(QuerySetting.TargetVexID).lng,
+//                                    GreedLS.graph.vertices.get(vjpair.getKey()).lat,
+//                                    GreedLS.graph.vertices.get(vjpair.getKey()).lng);
+                            double vj_target_dist = 0;
                             /* ABOVE MODIFIED */
                             /** Euclidean distance based pruning (or A* pruning or FWEST-pruning. */
                             if (eaj + vj_target_dist * GreedLS.speedMIN < t0 + b) {
@@ -404,12 +404,12 @@ public class GreedLS {
                         /** Not apply EALD-pruning yet. */
                         if (ldi > t0) { //---within the budget
                             /* BELOW MODIFIED: we don't use distance pruning */
-                            double source_vi_dist = this.EarthDistance(
-                                    GreedLS.graph.vertices.get(QuerySetting.SourceVexID).lat,
-                                    GreedLS.graph.vertices.get(QuerySetting.SourceVexID).lng,
-                                    GreedLS.graph.vertices.get(vi).lat,
-                                    GreedLS.graph.vertices.get(vi).lng);
-//                            double source_vi_dist = 0;
+//                            double source_vi_dist = this.EarthDistance(
+//                                    GreedLS.graph.vertices.get(QuerySetting.SourceVexID).lat,
+//                                    GreedLS.graph.vertices.get(QuerySetting.SourceVexID).lng,
+//                                    GreedLS.graph.vertices.get(vi).lat,
+//                                    GreedLS.graph.vertices.get(vi).lng);
+                            double source_vi_dist = 0;
                             /* ABOVE MODIFIED */
                             /** Euclidean distance based pruning (or A* pruning or FWEST-pruning. */
                             if (ldi - source_vi_dist * GreedLS.speedMIN > t0) {

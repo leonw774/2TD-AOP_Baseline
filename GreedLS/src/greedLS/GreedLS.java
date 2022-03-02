@@ -53,6 +53,7 @@ public class GreedLS {
     public static double speedMAX = 662.7946059169074;
 
     public static double speedMIN = 15.615478233558985; //Double.MAX_VALUE;
+//    public static double speedMIN = 0.0; //Double.MAX_VALUE; /* MODIFIED: we don't use distance pruning */
     public static double speedAVG = 327.81159775135086;
     private static int curMaxScenicValue = 0 - Integer.MAX_VALUE;
     private static int[] optimalValue = new int[4];
@@ -239,7 +240,6 @@ public class GreedLS {
      */
     public void calculateCandidateArcSet(Gap gap, int b) throws Exception {
         Map<Integer, Integer> FWR_result = FWR(gap.start, gap.actualStarttime, b);
-
         if (GreedLS.iterationNUM == 1) {
             for (Map.Entry<Integer, Integer> fwr_ret : FWR_result.entrySet()) {
                 EALDbuffer_MapValue mapval = new EALDbuffer_MapValue();
@@ -321,11 +321,14 @@ public class GreedLS {
                         int eaj = eai + (vjpair.getValue()).getLeft();
                         /** Not apply EALD-pruning yet. */
                         if (eaj < t0 + b) {//----within the budget
+                            /* BELOW MODIFIED: we don't use distance pruning */
                             double vj_target_dist = this.EarthDistance(
                                     GreedLS.graph.vertices.get(QuerySetting.TargetVexID).lat,
                                     GreedLS.graph.vertices.get(QuerySetting.TargetVexID).lng,
                                     GreedLS.graph.vertices.get(vjpair.getKey()).lat,
                                     GreedLS.graph.vertices.get(vjpair.getKey()).lng);
+//                            double vj_target_dist = 0;
+                            /* ABOVE MODIFIED */
                             /** Euclidean distance based pruning (or A* pruning or FWEST-pruning. */
                             if (eaj + vj_target_dist * GreedLS.speedMIN < t0 + b) {
                                 EALDbuffer_MapValue buffer = new EALDbuffer_MapValue();
@@ -400,12 +403,14 @@ public class GreedLS {
 
                         /** Not apply EALD-pruning yet. */
                         if (ldi > t0) { //---within the budget
+                            /* BELOW MODIFIED: we don't use distance pruning */
                             double source_vi_dist = this.EarthDistance(
                                     GreedLS.graph.vertices.get(QuerySetting.SourceVexID).lat,
                                     GreedLS.graph.vertices.get(QuerySetting.SourceVexID).lng,
                                     GreedLS.graph.vertices.get(vi).lat,
                                     GreedLS.graph.vertices.get(vi).lng);
-
+//                            double source_vi_dist = 0;
+                            /* ABOVE MODIFIED */
                             /** Euclidean distance based pruning (or A* pruning or FWEST-pruning. */
                             if (ldi - source_vi_dist * GreedLS.speedMIN > t0) {
                                 EALDbuffer_MapValue buffer = new EALDbuffer_MapValue();
@@ -495,8 +500,7 @@ public class GreedLS {
         int new_cost = (int) ((vi_vm_dist + vn_vj_dist) * GreedLS.speedAVG) +
                 GreedLS.graph.adjList.adjacencyList.get(vm.getId()).get(vn.getId()).getLeft();
         int deltaCost = new_cost - gap.SPCost;
-//        double criteria = ((double)new_value/GreedLS.valueMAX) / ((double)new_cost/GreedLS.costMAX);
-        double criteria = (deltaCost != 0) ? ((double) new_value / GreedLS.valueMAX) / ((double) new_cost / GreedLS.costMAX) : Double.MAX_VALUE; /* MODIFIED: ADD Double.MIN_VALUE because we want source == target */
+        double criteria = ((double)new_value/GreedLS.valueMAX) / ((double)new_cost/GreedLS.costMAX);
         return criteria;
     }
 
@@ -712,7 +716,6 @@ public class GreedLS {
             programCurTime = System.currentTimeMillis();
             this.calculateCandidateArcSet(gap, QuerySetting.budgetTime);
             GreedLS.calculateCandArcTime += System.currentTimeMillis() - programCurTime;
-
             //======arc selection
             programCurTime = System.currentTimeMillis();
             for (Arc candArc : this.CurIntersectionArc) {
@@ -891,6 +894,7 @@ public class GreedLS {
                 Vertex sourceVertexCopy = new Vertex(sourceCopyId, sourceVertex.getLat(), sourceVertex.getLng());
                 graph.vertices.add(sourceVertexCopy);
             }
+            System.out.println(graph.vertices.size() + " vertices in graph.");
             /* ABOVE IS MODIFIED */
 
             Gap sp = new Gap();
@@ -931,7 +935,7 @@ public class GreedLS {
             //---finish initialization
 
             while (true) {
-                GreedLS.outputWriter.print("Iter: " + iterationNUM + "\t");
+//                GreedLS.outputWriter.print("Iter: " + iterationNUM + "\t");
                 iterationNUM++;
 
                 if (runningTime > QuerySetting.runingTimeThreshold * 1000) {

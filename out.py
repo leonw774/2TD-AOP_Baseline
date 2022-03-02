@@ -53,13 +53,13 @@ def outputResult(vrPath: list, totalCost: float, vrNet: nx.Graph, source, destin
             plt.plot(n[0], n[1], 'bs', markersize=2)
         plt.annotate(
             f'{i}{angle}', 
-            n,
+            (n[0], n[1]+i/(len(phPath))*0.9),
             color='k', 
             fontsize=8)
     
     plt.figtext(
         0.5, 0.99,
-        f'virtual world: {args.virtual_filepath}\nsource: {source}, destinations: {destinations}\ntnmax: {args.tnmax} sn: {args.sn} itmax: {args.vritmax}\n Omax: {totalCost}',
+        f'virtual world: {args.virtual_filepath}\nsource: {source}, destinations: {destinations}\n runtime: {args.runtime}',
         wrap=True,
         horizontalalignment='center',
         verticalalignment='top',
@@ -90,7 +90,7 @@ def outputResult(vrPath: list, totalCost: float, vrNet: nx.Graph, source, destin
             x, y = n
             plt.annotate(
                 str(i), 
-                n,
+                (n[0], n[1]+i/(len(phPath))*0.9),
                 color='k', 
                 fontsize=10)
             if prex is not None:

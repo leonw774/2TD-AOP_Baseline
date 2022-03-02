@@ -3,5 +3,7 @@ __pycache__
 *.pdf
 *.iml
 data/*.txt
+GreedLS/Graph/*.txt
 out
+output
 GreedLS/classes/greedLS

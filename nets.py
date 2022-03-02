@@ -1,7 +1,7 @@
 import networkx as nx
 from numpy import short
 import pandas as pd
-from math import sqrt
+from math import dist, sqrt
 from random import choice, choices, randint
 
 def getPhysical(path: str) -> nx.Graph:
@@ -35,7 +35,7 @@ def getPhysical(path: str) -> nx.Graph:
         for d in direction:
             nj = ni[0] + d[0], ni[1] + d[1]
             while 0 <= nj[0] < length and 0 <= nj[1] < width and nj not in obs:
-                P.add_edge(ni, nj)
+                P.add_edge(ni, nj, weight=dist(ni, nj))
                 nj = nj[0] + d[0], nj[1] + d[1]
 
     return P, obs, length, width
@@ -89,7 +89,7 @@ def getVirtual(path: str) -> nx.Graph:
         random generate source and destinations for testing
     """
     source = choice(list(G.nodes()))
-    destinations = set(choices(list(G.nodes()), k=randint(3, 6)))
+    destinations = set(choices(list(G.nodes()), k=randint(6, 10)))
 
     return G, source, destinations
 
@@ -115,5 +115,14 @@ def makeTransformedVirtual(vrNet: nx.Graph, source: tuple, destnations: set, alp
         # print(f'[{u}, {v}] = {-distances[u][v]}')
         path = nx.reconstruct_path(u, v, predecessors)
         tfvrNet.edges[u, v]['path'] = path
+
+    # add id to tfvrNet nodes: source is 0
+    id = 1
+    for n in tfvrNet.nodes():
+        if n == source:
+            tfvrNet.nodes[n]['id'] = 0
+        else:
+            tfvrNet.nodes[n]['id'] = id
+            id += 1
 
     return tfvrNet

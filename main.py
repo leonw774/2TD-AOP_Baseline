@@ -39,7 +39,7 @@ def findTransformedVirtualPath(tfvrNet: nx.Graph, budget: float, runingTimeThres
 
     arcsStr = ''
     for u, v in tfvrNet.edges():
-        # because only suppport integer cost and value 
+        # because they only suppport integer cost and value
         int_weight = int(tfvrNet.edges[u, v]["weight"]*1e3)
         # because they use directed graph
         arcsStr += f'{tfvrNet.nodes[u]["id"]},{tfvrNet.nodes[v]["id"]}:{int_weight},2\n'
@@ -100,6 +100,11 @@ if __name__ == '__main__':
                         required=True,
                         type=str
                         )
+    parser.add_argument('--virtual-physical-mapping-file', '-m',
+                        dest='vp_mapping_filepath',
+                        required=True,
+                        type=str
+                        )
     parser.add_argument('--runtime-threshold', '--runtime', 
                         dest='runtime',
                         type=int,
@@ -142,7 +147,7 @@ if __name__ == '__main__':
 
     time_getnets = time()
 
-    vrNet, source, destinations = getVirtual(args.virtual_filepath)
+    vrNet, source, destinations = getVirtual(args.virtual_filepath, args.vp_mapping_filepath)
 
     phNet, obstacles, phWorldL, phWorldW = getPhysical(args.physical_filepath)
 

@@ -53,7 +53,7 @@ def outputResult(vrPath: list, totalCost: float, vrNet: nx.Graph, source, destin
             plt.plot(n[0], n[1], 'bs', markersize=2)
         plt.annotate(
             f'{i}{angle}', 
-            (n[0], n[1]+i/(len(phPath))*0.9),
+            (n[0], n[1]+i/(len(phPath))*0.5),
             color='k', 
             fontsize=8)
     
@@ -90,7 +90,7 @@ def outputResult(vrPath: list, totalCost: float, vrNet: nx.Graph, source, destin
             x, y = n
             plt.annotate(
                 str(i), 
-                (n[0], n[1]+i/(len(phPath))*0.9),
+                (n[0], n[1]+i/(len(phPath))*0.5),
                 color='k', 
                 fontsize=10)
             if prex is not None:

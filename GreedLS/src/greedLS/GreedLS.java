@@ -869,11 +869,15 @@ public class GreedLS {
 
                 // this does not actually copy the HashMap but just a reference
                 Map<Integer, Pair<Integer, Integer>> sourceCopyAdjMap = graph.adjList.adjacencyList.get(QuerySetting.SourceVexID);
-                graph.adjList.adjacencyList.put(sourceCopyId, new HashMap<Integer, Pair<Integer, Integer>>());
-                (graph.adjList.adjacencyList.get(sourceCopyId)).putAll(sourceCopyAdjMap);
+                if (sourceCopyAdjMap != null) {
+                    graph.adjList.adjacencyList.put(sourceCopyId, new HashMap<Integer, Pair<Integer, Integer>>());
+                    (graph.adjList.adjacencyList.get(sourceCopyId)).putAll(sourceCopyAdjMap);
+                }
                 Map<Integer, Pair<Integer, Integer>> sourceCopyRevAdjMap = graph.adjList.reverse_adjacencyList.get(QuerySetting.SourceVexID);
-                graph.adjList.reverse_adjacencyList.put(sourceCopyId, new HashMap<Integer, Pair<Integer, Integer>>());
-                (graph.adjList.reverse_adjacencyList.get(sourceCopyId)).putAll(sourceCopyRevAdjMap);
+                if (sourceCopyRevAdjMap != null) {
+                    graph.adjList.reverse_adjacencyList.put(sourceCopyId, new HashMap<Integer, Pair<Integer, Integer>>());
+                    (graph.adjList.reverse_adjacencyList.get(sourceCopyId)).putAll(sourceCopyRevAdjMap);
+                }
 
                 for (Map.Entry<Integer, Map<Integer, Pair<Integer, Integer>>> entry : graph.adjList.adjacencyList.entrySet()) {
                     // if this vertex point to source, do copy

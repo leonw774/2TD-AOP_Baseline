@@ -47,9 +47,8 @@ def findTransformedVirtualPath(tfvrNet: nx.Graph, budget: float, runingTimeThres
     arcs.write(arcsStr)
     arcs.close()
 
-    ######## compile & run java program to find best path
-    os.chdir("./GreedLS")
-    subprocess.Popen('javac -d classes src/greedLS/*.java').wait()
+    ######## run java program to find best path
+    os.chdir('./GreedLS')
     subprocess.Popen('java -classpath classes greedLS.Main').wait()
     os.chdir("..")
 
@@ -122,6 +121,12 @@ if __name__ == '__main__':
                         default=1.0,
                         help='alpha for transformed virtual network edge weight'
                         )
+    parser.add_argument('--no-build-java', '-n',
+                        dest='no_build_java',
+                        type=bool,
+                        action='store_true',
+                        help='if set, program will not compile java code before trying to run it'
+                        )
     parser.add_argument('--output-filepath', '-o',
                         dest='output',
                         type=str,
@@ -164,6 +169,11 @@ if __name__ == '__main__':
     print(f'algorithm parameter: runtimeThreshold={args.runtime}')
 
     time_findpaths = time()
+
+    if not args.no_build_java:
+        os.chdir('./GreedLS')
+        subprocess.Popen('javac -d classes src/greedLS/*.java').wait()
+        os.chdir('..')
 
     ######## FIND VIRTUAL PATH
     tfvrPath = findTransformedVirtualPath(tfvrNet, args.budget, args.runtime)

@@ -923,7 +923,7 @@ public class GreedLS {
                     + "\tTDSP: "
                     + sp.SPCost
                     + "\tbudget: "
-                    + QuerySetting.budgetTime / sp.SPCost * 100
+                    + ((sp.SPCost != 0) ? (QuerySetting.budgetTime / sp.SPCost * 100) : "inf")
                     + "% SP"
                     + "\tSPValue: "
                     + sp.collectedValue);

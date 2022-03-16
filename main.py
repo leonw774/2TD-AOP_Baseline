@@ -1,71 +1,31 @@
+from algo import findTransformedVirtualPath
 from argparse import ArgumentParser
-from cost import costFunc
 from nets import getPhysical, getVirtual, makeTransformedVirtual
 import networkx as nx
-from out import outputResult
+from out import outputImage, outputJSON
 import os
 import subprocess
-
 
 from io import StringIO
 import cProfile
 import pstats
 from time import time
 
-"""
-    input: transformed virtual network, runingTimeThreshold (in second)
-    return: found path
-"""
-def findTransformedVirtualPath(tfvrNet: nx.Graph, budget: float, runingTimeThreshold: float):
-    ######## make input files
-    query = open('GreedLS/Graph/query.txt', 'w+', encoding='utf8')
-    nodes = open('GreedLS/Graph/Nodes.csv', 'w+', encoding='utf8')
-    arcs = open('GreedLS/Graph/Arcs.txt', 'w+', encoding='utf8')
-    # clear output.txt
-    output = open('GreedLS/Graph/output.txt', 'w+', encoding='utf8')
-    output.close()
-
-    query.write(f'0,0,{budget},{runingTimeThreshold}\n')
-    query.close()
-
-    id2node = dict()
-    nodesStr = ''
-    for n in tfvrNet.nodes():
-        id = tfvrNet.nodes[n]['id']
-        id2node[id] = n
-        nodesStr += f'n{id},{n[0]},{n[1]}\n'
-    nodes.write(nodesStr)
-    nodes.close()
-
-    arcsStr = ''
-    for u, v in tfvrNet.edges():
-        # because they only suppport integer cost and value
-        int_weight = int(tfvrNet.edges[u, v]["weight"]*1e3)
-        # because they use directed graph
-        arcsStr += f'{tfvrNet.nodes[u]["id"]},{tfvrNet.nodes[v]["id"]}:{int_weight},2\n'
-        arcsStr += f'{tfvrNet.nodes[v]["id"]},{tfvrNet.nodes[u]["id"]}:{int_weight},2\n'
-    arcs.write(arcsStr)
-    arcs.close()
-
-    ######## run java program to find best path
-    os.chdir('./GreedLS')
-    subprocess.Popen('java -classpath classes greedLS.Main').wait()
-    os.chdir("..")
-
-    ######## get output
-    output = open('GreedLS/Graph/output.txt', 'r', encoding='utf8')
-    pathStr = output.readlines()[-1]
-    if pathStr[0] == '#':
-        print('findTransformedVirtualPath: cannot find path')
-        exit()
-    path = [id2node.get(int(x), id2node[0]) for x in pathStr[1:-2].split(', ')]
-    return path
 
 """
-    input: transformed virtual network, virtual network, physical network, found virtual path
-    return: virtual path, physical path, totalCost
+    input: transformed virtual network, virtual network, physical network, found virtual path, source node
+    return: virtual path, physical path, totalCost, totalLength
 """
-def getVirtualAndPhysicalPath(tfvrNet: nx.Graph, vrNet: nx.Graph, phNet: nx.Graph, tfvrPath: list):
+def getPaths(tfvrNet: nx.Graph, vrNet: nx.Graph, phNet: nx.Graph, tfvrPath: list, source):
+    # rotate tfvrPath so that it is a circle with the source as first element
+    n = tfvrPath.index(source)
+    if tfvrPath[0] == tfvrPath[-1]:
+        # if vrPath is already a circle
+        n = tfvrPath.index(source)
+        tfvrPath = tfvrPath[n:-1] + tfvrPath[:n] + [source]
+    else:
+        tfvrPath = tfvrPath[n:] + tfvrPath[:n] + [source]
+    
     vrPath = [tfvrPath[0]]
     for i in range(len(tfvrPath) - 1):
         vrSubPath = tfvrNet.edges[tfvrPath[i], tfvrPath[i+1]]['path']
@@ -80,11 +40,16 @@ def getVirtualAndPhysicalPath(tfvrNet: nx.Graph, vrNet: nx.Graph, phNet: nx.Grap
         if phNet.has_edge(u, v):
             phPath.append(v)
         else:
-            sp = nx.dijkstra_path(phNet, u, v)
+            try:
+                sp = nx.dijkstra_path(phNet, u, v)
+            except nx.NetworkXNoPath as e:
+                print(f'getVirtualAndPhysicalPath: Can not find phyiscal path from {u} to {v}')
+                raise e 
             phPath.extend(sp[1:])
 
     totalCost = sum(vrNet.edges[vrPath[n], vrPath[n+1]]['cost'] for n in range(len(vrPath) - 1))
-    return vrPath, phPath, totalCost
+    totalLength = sum(vrNet.edges[vrPath[n], vrPath[n+1]]['length'] for n in range(len(vrPath) - 1))
+    return tfvrPath, vrPath, phPath, totalCost, totalLength
 
 
 if __name__ == '__main__':
@@ -113,7 +78,7 @@ if __name__ == '__main__':
     parser.add_argument('--budget', '-b',
                         dest='budget',
                         type=float,
-                        default=1073741823 # INT32_MAX / 2
+                        default=1073741823 # INT32_MAX / 2 - 1
                         )
     parser.add_argument('--alpha', '-a',
                         dest='alpha',
@@ -123,7 +88,6 @@ if __name__ == '__main__':
                         )
     parser.add_argument('--no-build-java', '-n',
                         dest='no_build_java',
-                        type=bool,
                         action='store_true',
                         help='if set, program will not compile java code before trying to run it'
                         )
@@ -156,7 +120,7 @@ if __name__ == '__main__':
 
     phNet, obstacles, phWorldL, phWorldW = getPhysical(args.physical_filepath)
 
-    tfvrNet = makeTransformedVirtual(vrNet, source, destinations, args.alpha, costFunc)
+    tfvrNet = makeTransformedVirtual(vrNet, source, destinations, args.alpha)
 
     print(f'virtual network has {vrNet.number_of_nodes()} nodes and {vrNet.number_of_edges()} edges')
     print(f'alpha: {args.alpha}, source: {source}, destination: {destinations}')
@@ -170,23 +134,25 @@ if __name__ == '__main__':
 
     time_findpaths = time()
 
-    if not args.no_build_java:
-        os.chdir('./GreedLS')
-        subprocess.Popen('javac -d classes src/greedLS/*.java').wait()
-        os.chdir('..')
-
     ######## FIND VIRTUAL PATH
-    tfvrPath = findTransformedVirtualPath(tfvrNet, args.budget, args.runtime)
-    print("tfvrPath:", tfvrPath)
+
+    tfvrPath = findTransformedVirtualPath(tfvrNet, args.budget, args.runtime, args.no_build_java)
+    try:
+        assert set(tfvrPath) == destinations | {source}
+    except AssertionError as e:
+        print('Error: tfvrPath does not contain all destinations or source. Missing:', (destinations | {source}) - set(tfvrPath))
+        exit()
 
     ######## GET CORRESPONDING PHYSICAL PATH
-    vrPath, phPath, totalCost = getVirtualAndPhysicalPath(tfvrNet, vrNet, phNet, tfvrPath)
-    # print("vrPath:", vrPath)
-    # print("phPath:", phPath)
-    # print("totalCost:", totalCost)
+
+    tfvrPath, vrPath, phPath, totalCost, totalLength = getPaths(tfvrNet, vrNet, phNet, tfvrPath, source)
+    print(f'tfvrPath: {tfvrPath}')
+    # print(f'vrPath: {vrPath}')
+    # print(f'phPath: {phPath}')
+    print(f'totalCost: {totalCost}, totalLength: {totalLength}')
     if args.budget:
         if totalCost > args.budget:
-            print(f'Can not find path: the total cost: {totalCost} is larger than budget: {args.budget}')
+            print(f'Can not find path: total cost: {totalCost} is larger than budget: {args.budget}')
             exit()
     
     print(f'find paths: {time()-time_findpaths} seconds')
@@ -194,7 +160,8 @@ if __name__ == '__main__':
     ######## OUTPUT
 
     if args.output:
-        outputResult(vrPath, totalCost, vrNet, source, destinations, phPath, phWorldL, phWorldW, obstacles, args)
+        outputJSON(vrPath, totalCost, totalLength, vrNet, source, destinations, args)
+        outputImage(vrPath, totalCost, totalLength, vrNet, source, destinations, phPath, phWorldL, phWorldW, obstacles, args)
 
     if args.use_profile:
         pr.disable()

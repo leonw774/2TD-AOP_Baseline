@@ -3,6 +3,7 @@ __pycache__
 *.pdf
 *.iml
 data/*.txt
+data/*.json
 GreedLS/Graph/*
 out
 output

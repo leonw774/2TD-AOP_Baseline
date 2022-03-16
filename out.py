@@ -1,10 +1,31 @@
 import networkx as nx
 import matplotlib.pyplot as plt
+import json
 
-"""
-    to be re-implemented
-"""
-def outputResult(vrPath: list, totalCost: float, vrNet: nx.Graph, source, destinations, phPath:list, phWorldL: int, phWorldW: int, obs: list, args):
+
+def outputJSON(vrPath: list, totalCost: float, totalLength: float, vrNet: nx.Graph, source, destinations, args):
+    resultObj = {
+        'Steps': [],
+        'Total cost': totalCost,
+        'Total length': totalLength
+    }
+
+    for i in range(len(vrPath) - 1):
+        u, v = vrPath[i], vrPath[i+1]
+        stepObj = {
+            'left': vrNet.nodes[u]['nid'],
+            'right': vrNet.nodes[v]['nid'],
+            'length': vrNet.edges[u, v]['length'],
+            'cost': vrNet.edges[u, v]['cost']
+        }
+        # print(stepObj)
+        resultObj['Steps'].append(stepObj)
+    json.dump(resultObj, open(f'{args.output}_path.json', 'w+', encoding='utf8'))
+
+
+def outputImage(
+    vrPath: list, totalCost: float, totalLength: float, vrNet: nx.Graph, source, destinations,
+    phPath:list, phWorldL: int, phWorldW: int, obs: list, args):
 
     plt.figure(figsize=(12, 6))
 
@@ -59,7 +80,7 @@ def outputResult(vrPath: list, totalCost: float, vrNet: nx.Graph, source, destin
     
     plt.figtext(
         0.5, 0.99,
-        f'virtual world: {args.virtual_filepath}\nsource: {source}, destinations: {destinations}\n runtime: {args.runtime}',
+        f'virtual world: {args.virtual_filepath}\nsource: {source}, destinations: {destinations}\nruntime: {args.runtime}',
         wrap=True,
         horizontalalignment='center',
         verticalalignment='top',
@@ -99,10 +120,10 @@ def outputResult(vrPath: list, totalCost: float, vrNet: nx.Graph, source, destin
 
     plt.figtext(
         0.5, 0.1,
-        f'physical world: {args.physical_filepath}\ncost: {totalCost} budget: {args.budget}',
+        f'physical world: {args.physical_filepath}\ncost: {totalCost} length: {totalLength} budget: {args.budget}',
         wrap=True,
         horizontalalignment='center',
         verticalalignment='top',
         fontsize=12)
 
-    plt.savefig(f'{args.output}.png')
+    plt.savefig(f'{args.output}_img.png')

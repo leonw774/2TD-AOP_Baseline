@@ -1,55 +1,53 @@
-from algo import findTransformedVirtualPath
 from argparse import ArgumentParser
-from nets import getPhysical, getVirtual, makeTransformedVirtual
-import networkx as nx
-from out import outputImage, outputJSON
-import os
-import subprocess
-
-from io import StringIO
 import cProfile
+from io import StringIO
 import pstats
 from time import time
+import networkx as nx
+
+from algo import find_tfvrpath
+from nets import get_phnet, get_vrnet, make_tfvrnet
+from out import output_image, output_json
 
 
-"""
-    input: transformed virtual network, virtual network, physical network, found virtual path, source node
-    return: virtual path, physical path, totalCost, totalLength
-"""
-def getPaths(tfvrNet: nx.Graph, vrNet: nx.Graph, phNet: nx.Graph, tfvrPath: list, source):
-    # rotate tfvrPath so that it is a circle with the source as first element
-    n = tfvrPath.index(source)
-    if tfvrPath[0] == tfvrPath[-1]:
-        # if vrPath is already a circle
-        n = tfvrPath.index(source)
-        tfvrPath = tfvrPath[n:-1] + tfvrPath[:n] + [source]
+def get_paths(tfvrnet: nx.Graph, vrnet: nx.Graph, phnet: nx.Graph, tfvrpath: list, source):
+    """
+        input: transformed virtual network, virtual network, physical network, found virtual path, source node
+        return: virtual path, physical path, total_cost, total_length
+    """
+    # rotate tfvrpath so that it is a circle with the source as first element
+    n = tfvrpath.index(source)
+    if tfvrpath[0] == tfvrpath[-1]:
+        # if vrpath is already a circle
+        n = tfvrpath.index(source)
+        tfvrpath = tfvrpath[n:-1] + tfvrpath[:n] + [source]
     else:
-        tfvrPath = tfvrPath[n:] + tfvrPath[:n] + [source]
-    
-    vrPath = [tfvrPath[0]]
-    for i in range(len(tfvrPath) - 1):
-        vrSubPath = tfvrNet.edges[tfvrPath[i], tfvrPath[i+1]]['path']
-        # print(f'vrSubPath[{i}]:, {vrSubPath}')
-        if vrSubPath[-1] == vrPath[-1]:
-            vrSubPath = list(reversed(vrSubPath))
-        vrPath.extend(vrSubPath[1:])
+        tfvrpath = tfvrpath[n:] + tfvrpath[:n] + [source]
 
-    phPath = [vrNet.nodes[vrPath[0]]['phy']]
-    for i in range(len(vrPath)-1):
-        u, v = vrNet.nodes[vrPath[i]]['phy'], vrNet.nodes[vrPath[i+1]]['phy']
-        if phNet.has_edge(u, v):
-            phPath.append(v)
+    vrpath = [tfvrpath[0]]
+    for i in range(len(tfvrpath) - 1):
+        vrsubpath = tfvrnet.edges[tfvrpath[i], tfvrpath[i+1]]['path']
+        # print(f'vrsubpath[{i}]:, {vrsubpath}')
+        if vrsubpath[-1] == vrpath[-1]:
+            vrsubpath = list(reversed(vrsubpath))
+        vrpath.extend(vrsubpath[1:])
+
+    phpath = [vrnet.nodes[vrpath[0]]['phy']]
+    for i in range(len(vrpath)-1):
+        u, v = vrnet.nodes[vrpath[i]]['phy'], vrnet.nodes[vrpath[i+1]]['phy']
+        if phnet.has_edge(u, v):
+            phpath.append(v)
         else:
             try:
-                sp = nx.dijkstra_path(phNet, u, v)
-            except nx.NetworkXNoPath as e:
-                print(f'getVirtualAndPhysicalPath: Can not find phyiscal path from {u} to {v}')
-                raise e 
-            phPath.extend(sp[1:])
+                sp = nx.dijkstra_path(phnet, u, v)
+            except nx.NetworkXNoPath as nopatherror:
+                print(f'Can not find phyiscal path from {u} to {v}')
+                raise nopatherror 
+            phpath.extend(sp[1:])
 
-    totalCost = sum(vrNet.edges[vrPath[n], vrPath[n+1]]['cost'] for n in range(len(vrPath) - 1))
-    totalLength = sum(vrNet.edges[vrPath[n], vrPath[n+1]]['length'] for n in range(len(vrPath) - 1))
-    return tfvrPath, vrPath, phPath, totalCost, totalLength
+    total_cost = sum(vrnet.edges[vrpath[n], vrpath[n+1]]['cost'] for n in range(len(vrpath) - 1))
+    total_length = sum(vrnet.edges[vrpath[n], vrpath[n+1]]['length'] for n in range(len(vrpath) - 1))
+    return tfvrpath, vrpath, phpath, total_cost, total_length
 
 
 if __name__ == '__main__':
@@ -111,57 +109,59 @@ if __name__ == '__main__':
 
     print(f'virtual file:{args.virtual_filepath}')
     print(f'physical file:{args.physical_filepath}')
-    
+  
     ######## GET INPUT
 
     time_getnets = time()
 
-    vrNet, source, destinations = getVirtual(args.virtual_filepath, args.vp_mapping_filepath)
+    vrnet, source, destinations = get_vrnet(args.virtual_filepath, args.vp_mapping_filepath)
 
-    phNet, obstacles, phWorldL, phWorldW = getPhysical(args.physical_filepath)
+    phnet, obstacles, ph_l, ph_w = get_phnet(args.physical_filepath)
+    ph_world_info = (obstacles, ph_l, ph_w)
 
-    tfvrNet = makeTransformedVirtual(vrNet, source, destinations, args.alpha)
+    tfvrnet = make_tfvrnet(vrnet, source, destinations, args.alpha)
 
-    print(f'virtual network has {vrNet.number_of_nodes()} nodes and {vrNet.number_of_edges()} edges')
+    print(f'virtual network has {vrnet.number_of_nodes()} nodes and {vrnet.number_of_edges()} edges')
     print(f'alpha: {args.alpha}, source: {source}, destination: {destinations}')
-    print(f'physical network has {phNet.number_of_nodes()} nodes and {phNet.number_of_edges()} edges')
-    print(f'transformed virtual network has {tfvrNet.number_of_nodes()} nodes and {tfvrNet.number_of_edges()} edges')
+    print(f'physical network has {phnet.number_of_nodes()} nodes and {phnet.number_of_edges()} edges')
+    print(f'transformed virtual network has {tfvrnet.number_of_nodes()} nodes and {tfvrnet.number_of_edges()} edges')
 
     print(f'read and make nets: {time()-time_getnets} seconds')
 
-    print(f'budget: {args.budget}')
-    print(f'algorithm parameter: runtimeThreshold={args.runtime}')
+    print(f'physical path cost limit: {args.cost_limit}')
+    print(f'algorithm parameter: itmax={args.vritmax} sn={args.sn}')
 
     time_findpaths = time()
 
     ######## FIND VIRTUAL PATH
 
-    tfvrPath = findTransformedVirtualPath(tfvrNet, args.budget, args.runtime, args.no_build_java)
+    tfvrpath = find_tfvrpath(tfvrnet, args.budget, args.runtime, args.no_build_java)
     try:
-        assert set(tfvrPath) == destinations | {source}
+        assert set(tfvrpath) == destinations | {source}
     except AssertionError as e:
-        print('Error: tfvrPath does not contain all destinations or source. Missing:', (destinations | {source}) - set(tfvrPath))
+        print('Error: tfvrpath does not contain all destinations or source. Missing:',
+              (destinations | {source}) - set(tfvrpath))
         exit()
 
     ######## GET CORRESPONDING PHYSICAL PATH
 
-    tfvrPath, vrPath, phPath, totalCost, totalLength = getPaths(tfvrNet, vrNet, phNet, tfvrPath, source)
-    print(f'tfvrPath: {tfvrPath}')
-    # print(f'vrPath: {vrPath}')
-    # print(f'phPath: {phPath}')
-    print(f'totalCost: {totalCost}, totalLength: {totalLength}')
-    if args.budget:
-        if totalCost > args.budget:
-            print(f'Can not find path: total cost: {totalCost} is larger than budget: {args.budget}')
+    tfvrpath, vrpath, phpath, total_cost, total_length = get_paths(tfvrnet, vrnet, phnet, tfvrpath, source)
+    print(f'tfvrpath: {tfvrpath}')
+    # print(f'vrpath: {vrpath}')
+    # print(f'phpath: {phpath}')
+    print(f'total cost: {total_cost}, total length: {total_length}')
+    if args.cost_limit:
+        if total_cost > args.cost_limit:
+            print(f'Can not find path: total cost: {total_cost} is larger than cost limit: {args.cost_limit}')
             exit()
-    
+
     print(f'find paths: {time()-time_findpaths} seconds')
 
     ######## OUTPUT
 
     if args.output:
-        outputJSON(vrPath, totalCost, totalLength, vrNet, source, destinations, args)
-        outputImage(vrPath, totalCost, totalLength, vrNet, source, destinations, phPath, phWorldL, phWorldW, obstacles, args)
+        output_json(vrpath, total_cost, total_length, vrnet, args)
+        output_image(vrpath, total_cost, total_length, vrnet, source, destinations, phpath, ph_world_info, args)
 
     if args.use_profile:
         pr.disable()

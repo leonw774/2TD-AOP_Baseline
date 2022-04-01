@@ -68,13 +68,12 @@ if __name__ == '__main__':
                         type=str
                         )
     parser.add_argument('--runtime-threshold', '--runtime', 
-                        dest='runtime',
+                        dest='runtime_threshold',
                         type=int,
-                        default=10,
-                        help='runtime limit'
+                        default=10
                         )
-    parser.add_argument('--budget', '-b',
-                        dest='budget',
+    parser.add_argument('--cost-limit', '-c',
+                        dest='cost_limit',
                         type=float,
                         default=1073741823 # INT32_MAX / 2 - 1
                         )
@@ -129,13 +128,13 @@ if __name__ == '__main__':
     print(f'read and make nets: {time()-time_getnets} seconds')
 
     print(f'physical path cost limit: {args.cost_limit}')
-    print(f'algorithm parameter: itmax={args.vritmax} sn={args.sn}')
+    print(f'algorithm parameter: runtimeThreshold={args.runtime_threshold}')
 
     time_findpaths = time()
 
     ######## FIND VIRTUAL PATH
 
-    tfvrpath = find_tfvrpath(tfvrnet, args.budget, args.runtime, args.no_build_java)
+    tfvrpath = find_tfvrpath(tfvrnet, args.cost_limit, args.runtime_threshold, args.no_build_java)
     try:
         assert set(tfvrpath) == destinations | {source}
     except AssertionError as e:

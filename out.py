@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 
 def output_json(vrpath: list, total_cost: float, total_length: float, vrnet: nx.Graph, args):
     result_obj = {
+        'Alpha': args.alpha,
         'Steps': [],
         'Total cost': total_cost,
         'Total length': total_length
@@ -20,7 +21,7 @@ def output_json(vrpath: list, total_cost: float, total_length: float, vrnet: nx.
         }
         # print(step_obj)
         result_obj['Steps'].append(step_obj)
-    json.dump(result_obj, open(f'{args.output}_path.json', 'w+', encoding='utf8'))
+    json.dump(result_obj, open(f'{args.output}_alpha{args.alpha}_path.json', 'w+', encoding='utf8'))
 
 
 def output_image(
@@ -66,7 +67,7 @@ def output_image(
         0.5, 0.99,
         f'virtual world: {args.virtual_filepath}\n'
             + f'source: {source}, destinations: {destinations}\n'
-            + f'sn: {args.sn} itmax: {args.vritmax}',
+            + f'runtime threshold: {args.runtime_threshold}',
         wrap=True,
         horizontalalignment='center',
         verticalalignment='top',
@@ -108,10 +109,10 @@ def output_image(
     plt.figtext(
         0.5, 0.1,
         f'physical world: {args.physical_filepath} alpha: {args.alpha}\n'
-            + f'cost: {total_cost} length: {total_length} cost limit: {args.cost_limit}',
+            + f'cost: {total_cost} length: {total_length} cost limit: {args.cost_limit} runtime threshold: {args.runtime_threshold}',
         wrap=True,
         horizontalalignment='center',
         verticalalignment='top',
         fontsize=12)
 
-    plt.savefig(f'{args.output}_img.png')
+    plt.savefig(f'{args.output}_alpha{args.alpha}_img.png')

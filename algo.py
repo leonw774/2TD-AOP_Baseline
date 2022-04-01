@@ -48,7 +48,7 @@ def find_tfvrpath(tfvrnet: nx.Graph, budget: float, running_time_threshold: floa
     os.chdir("..")
 
     ######## get output
-    with open('GreedLS/Graph/output.txt', 'w+', encoding='utf8') as output_file:
+    with open('GreedLS/Graph/output.txt', 'r', encoding='utf8') as output_file:
         path_str = output_file.readlines()[-1]
         try:
             assert path_str[0] != '#'

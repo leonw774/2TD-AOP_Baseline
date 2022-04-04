@@ -75,7 +75,7 @@ if __name__ == '__main__':
     parser.add_argument('--cost-limit', '-c',
                         dest='cost_limit',
                         type=float,
-                        default=1073741823 # INT32_MAX / 2 - 1
+                        default=float('inf')
                         )
     parser.add_argument('--alpha', '-a',
                         dest='alpha',

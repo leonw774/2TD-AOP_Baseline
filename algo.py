@@ -14,7 +14,7 @@ def find_tfvrpath(tfvrnet: nx.Graph, budget: float, running_time_threshold: floa
     """
     ######## make input files
     with open('GreedLS/Graph/query.txt', 'w+', encoding='utf8') as query_file:
-        query_file.write(f'0,0,{budget},{running_time_threshold}\n')
+        query_file.write(f'0,0,{int(budget*1e3)},{running_time_threshold}\n')
 
     with open('GreedLS/Graph/Nodes.csv', 'w+', encoding='utf8') as node_file:
         id2node = dict()

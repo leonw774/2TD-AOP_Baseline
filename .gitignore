@@ -5,6 +5,7 @@ __pycache__
 data/*.txt
 data/*.json
 GreedLS/Graph/*
+!GreedLS/Graph/.gitkeep
 out
 output
 GreedLS/classes/greedLS

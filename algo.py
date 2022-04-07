@@ -12,12 +12,13 @@ def find_tfvrpath(tfvrnet: nx.Graph, budget: float, running_time_threshold: floa
         - no_build_java: if True, will no build java classes before try to run
         return: found path
     """
+    BUDGET_MAX = 1073741823
     ######## make input files
     with open('GreedLS/Graph/query.txt', 'w+', encoding='utf8') as query_file:
         if budget == float('inf'):
-            budget = 1073741823 # INT32_MAX / 2 - 1
+            budget = BUDGET_MAX # INT32_MAX / 2 - 1
         else:
-            budget = int(budget*1e3)
+            budget = min(BUDGET_MAX, int(budget*1e3))
         query_file.write(f'0,0,{budget},{running_time_threshold}\n')
 
     with open('GreedLS/Graph/Nodes.csv', 'w+', encoding='utf8') as node_file:
